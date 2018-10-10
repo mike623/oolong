@@ -6,14 +6,66 @@ import './actionsButton.dart';
 
 void main() => runApp(new MyApp());
 
+class Task {
+  String _task;
+
+  String get task => _task;
+
+  set task(String task) {
+    _task = task;
+  }
+
+  DateTime _createdAt;
+
+  DateTime get createdAt => _createdAt;
+
+  set createdAt(DateTime createdAt) {
+    _createdAt = createdAt;
+  }
+
+  DateTime _finishedAt;
+
+  DateTime get finishedAt => _finishedAt;
+
+  set finishedAt(DateTime finishedAt) {
+    _finishedAt = finishedAt;
+  }
+
+  bool _isFinshed = false;
+
+  bool get isFinshed => _isFinshed;
+
+  set isFinshed(bool isFinshed) {
+    _isFinshed = isFinshed;
+  }
+
+  void toggleIsFinshed() {
+    _isFinshed = !_isFinshed;
+    if (_isFinshed) {
+      _finishedAt = DateTime.now();
+    }
+  }
+
+  Task(t) {
+    _task = t;
+    _createdAt = DateTime.now();
+  }
+}
+
 class TasksModel extends Model {
-  List<String> tasks = [];
-  List<String> finishTasks = [];
+  List<Task> tasks = [];
 
   void _addTask(String text) {
     if (!isExist(text)) {
-      tasks.add(text);
+      tasks.add(new Task(text));
     }
+    notifyListeners();
+  }
+
+  void pushToTop(int index) {
+    var task = tasks[index];
+    tasks.removeAt(index);
+    tasks.insert(0, task);
     notifyListeners();
   }
 
@@ -23,22 +75,12 @@ class TasksModel extends Model {
   }
 
   void finishTask(int index) {
-    if (!isFinish(index)) {
-      finishTasks.add(tasks[index]);
-    } else {
-      finishTasks.removeWhere(isExist);
-    }
+    tasks[index].toggleIsFinshed();
     notifyListeners();
   }
 
-  bool isFinish(int index) {
-    bool check(String i) => i == tasks[index];
-    int idx = finishTasks.lastIndexWhere(check);
-    return idx >= 0;
-  }
-
   bool isExist(String text) {
-    int idx = tasks.lastIndexWhere((i) => i == text);
+    int idx = tasks.lastIndexWhere((i) => i.task == text);
     return idx >= 0;
   }
 }
@@ -50,6 +92,7 @@ class MyApp extends StatelessWidget {
     return new ScopedModel<TasksModel>(
       model: new TasksModel(),
       child: new MaterialApp(
+        debugShowCheckedModeBanner: false,
         theme: new ThemeData(
           primarySwatch: Colors.blue,
         ),
@@ -159,8 +202,9 @@ class Upper extends StatelessWidget {
                 child: new Row(
                     crossAxisAlignment: CrossAxisAlignment.center,
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [Title, 
-                    // new Icon(Icons.search)
+                    children: [
+                      Title,
+                      // new Icon(Icons.search)
                     ])),
           ),
           Cal,
@@ -171,20 +215,20 @@ class Upper extends StatelessWidget {
 }
 
 class Lower extends StatelessWidget {
-  Widget _buildItem(text, i, TasksModel model) {
+  Widget _buildItem(Task task, int idx, TasksModel model) {
     return new Slidable(
       secondaryActions: <Widget>[
         new IconSlideAction2(
           caption: null,
           foregroundColor: Colors.black26,
           icon: Icons.vertical_align_top,
-          onTap: () => model.removeTask(i),
+          onTap: () => model.pushToTop(idx),
         ),
         new IconSlideAction2(
           caption: null,
           foregroundColor: Colors.black26,
           icon: Icons.remove_circle,
-          onTap: () => model.removeTask(i),
+          onTap: () => model.removeTask(idx),
         ),
       ],
       delegate: new SlidableDrawerDelegate(),
@@ -192,18 +236,22 @@ class Lower extends StatelessWidget {
       child: Container(
         child: ListTile(
           contentPadding: EdgeInsets.symmetric(horizontal: 5.0),
+          // TODO: better format?
+          // subtitle: task.isFinshed
+          //     ? new Text(task.createdAt.toIso8601String())
+          //     : null,
           title: new Text(
-            text,
+            task.task,
             style: TextStyle(
-              color: model.isFinish(i) ? Colors.black38 : Colors.black87,
-              decoration: model.isFinish(i)
+              color: task.isFinshed ? Colors.black38 : Colors.black87,
+              decoration: task.isFinshed
                   ? TextDecoration.lineThrough
                   : TextDecoration.none,
             ),
           ),
           trailing: new IconButton(
-            onPressed: () => model.finishTask(i),
-            icon: model.isFinish(i)
+            onPressed: () => model.finishTask(idx),
+            icon: task.isFinshed
                 ? Icon(Icons.check_box)
                 : Icon(Icons.check_box_outline_blank),
           ),
