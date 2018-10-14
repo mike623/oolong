@@ -210,10 +210,12 @@ class Upper extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final DateTime today = new DateTime.now();
+    final sunDiff = today.weekday == DateTime.sunday ? 0 : today.weekday;
+    final lastSun = today.subtract(new Duration(days: sunDiff));
     List<Widget> CalList = [];
     final weekDayString = ["S", "M", "T", "W", "T", "F", "S"];
     for (int x = 0; x < 7; x++) {
-      DateTime d = today.subtract(new Duration(days: today.weekday - x));
+      DateTime d = lastSun.add(new Duration(days: x));
       var k = new Column(
         children: <Widget>[
           new Text(
