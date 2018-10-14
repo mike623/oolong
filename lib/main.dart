@@ -106,16 +106,19 @@ class TasksModel extends Model {
     tasks.removeAt(index);
     tasks.insert(0, task);
     notifyListeners();
+    saveDb();
   }
 
   void removeTask(int index) {
     tasks.removeAt(index);
     notifyListeners();
+    saveDb();
   }
 
   void finishTask(int index) {
     tasks[index].toggleIsFinshed();
     notifyListeners();
+    saveDb();
   }
 
   bool isExist(String text) {
