@@ -3,8 +3,16 @@ import 'package:scoped_model/scoped_model.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
 import './actionsButton.dart';
+import 'dart:convert';
+import 'package:shared_preferences/shared_preferences.dart';
 
-void main() => runApp(new MyApp());
+void main() {
+  TasksModel m = new TasksModel();
+  m.loadFromDb();
+  return runApp(new MyApp(
+    modal: m,
+  ));
+}
 
 class Task {
   String _task;
@@ -50,16 +58,47 @@ class Task {
     _task = t;
     _createdAt = DateTime.now();
   }
+  Task.fromJson(Map<String, dynamic> json)
+      : _task = json['_task'],
+        _createdAt = DateTime.parse(json['_createdAt']),
+        _finishedAt = json['_finishedAt'] != null
+            ? DateTime.parse(json['_finishedAt'])
+            : null,
+        _isFinshed = json['_isFinshed'];
+  Map<String, dynamic> toJson() => {
+        '_task': this._task,
+        '_isFinshed': this._isFinshed,
+        '_createdAt': this._createdAt,
+        '_finishedAt': this._finishedAt,
+      };
 }
 
 class TasksModel extends Model {
   List<Task> tasks = [];
+  dynamic myEncode(dynamic item) {
+    if (item is DateTime) {
+      return item.toIso8601String();
+    }
+    if (item is Task) {
+      return item.toJson();
+    }
+    return item;
+  }
+
+  // dynamic myr(dynamic key, dynamic value) {
+  //   if (key == null && value is List) {
+  //     debugPrint("");
+  //     return value.toList().map((f) => Task.fromJson(f));
+  //   }
+  //   return value;
+  // }
 
   void _addTask(String text) {
     if (!isExist(text)) {
       tasks.add(new Task(text));
     }
     notifyListeners();
+    saveDb();
   }
 
   void pushToTop(int index) {
@@ -83,14 +122,37 @@ class TasksModel extends Model {
     int idx = tasks.lastIndexWhere((i) => i.task == text);
     return idx >= 0;
   }
+
+  void loadFromDb() async {
+    debugPrint('loadFromDb');
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String d = await prefs.get('tasks') ?? '[]';
+    if (d != null) {
+      List k = json.decode(d);
+      for (int x = 0; x < k.length; x++) {
+        Map j = k[x];
+        debugPrint("");
+        this.tasks.add(Task.fromJson(j));
+      }
+      notifyListeners();
+    }
+  }
+
+  void saveDb() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String x = json.encode(tasks, toEncodable: myEncode);
+    prefs.setString('tasks', x);
+  }
 }
 
 class MyApp extends StatelessWidget {
+  MyApp({this.modal});
+  final TasksModel modal;
   // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
     return new ScopedModel<TasksModel>(
-      model: new TasksModel(),
+      model: modal,
       child: new MaterialApp(
         debugShowCheckedModeBanner: false,
         theme: new ThemeData(

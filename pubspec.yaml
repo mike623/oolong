@@ -22,6 +22,7 @@ dependencies:
   scoped_model: ^0.3.0
   intl: ^0.15.7
   flutter_slidable: "^0.4.7"
+  shared_preferences: ^0.4.3
 
 dev_dependencies:
   flutter_test:
